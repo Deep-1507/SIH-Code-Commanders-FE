@@ -17,11 +17,12 @@ export default function Header() {
             <li>About</li>
           </Link>
           <li><a href="#services">Services</a></li>
-          <Link to='/sign-in'>
+          <Link to='/profile'>
             {currentUser ? (
               <img src={currentUser.profilePicture} alt='profile' className='h-7 w-7 rounded-full object-cover' />
             ) : (
-              <li>Sign In</li>
+              <Link to = "sign-in">
+              Sign IN</Link>
             )}
           </Link>
         </ul>

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import ShopCreate from "../components/ShopCreate";
+import ShopCreate from "../components-ansh/ShopCreate";
 
 const ShopCreatePage = () => {
   const navigate = useNavigate();

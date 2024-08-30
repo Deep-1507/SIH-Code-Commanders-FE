@@ -1,15 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { AiOutlinePlusCircle } from "react-icons/ai";
-// import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-// import { createProduct } from "../../redux/actions/product";
 import { toast } from "react-toastify";
 
 const CreateProduct = () => {
-//   const { seller } = useSelector((state) => state.seller);
-//   const { success, error } = useSelector((state) => state.products);
   const navigate = useNavigate();
-//   const dispatch = useDispatch();
 
   const [images, setImages] = useState([]);
   const [name, setName] = useState("");
@@ -19,17 +14,7 @@ const CreateProduct = () => {
   const [originalPrice, setOriginalPrice] = useState();
   const [discountPrice, setDiscountPrice] = useState();
   const [stock, setStock] = useState();
-
-//   useEffect(() => {
-//     if (error) {
-//       toast.error(error);
-//     }
-//     if (success) {
-//       toast.success("Product created successfully!");
-//       navigate("/dashboard");
-//       window.location.reload();
-//     }
-//   }, [dispatch, error, success]);
+  const [shopId, setShopId] = useState(""); // Set this value as needed
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
@@ -48,13 +33,13 @@ const CreateProduct = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const newForm = new FormData();
 
     images.forEach((image) => {
-      newForm.set("images", image);
+      newForm.append("images", image); // Use append instead of set for multiple images
     });
     newForm.append("name", name);
     newForm.append("description", description);
@@ -63,25 +48,32 @@ const CreateProduct = () => {
     newForm.append("originalPrice", originalPrice);
     newForm.append("discountPrice", discountPrice);
     newForm.append("stock", stock);
-    newForm.append("shopId", seller._id);
-    // dispatch(
-    //   createProduct({
-    //     name,
-    //     description,
-    //     category,
-    //     tags,
-    //     originalPrice,
-    //     discountPrice,
-    //     stock,
-    //     shopId: seller._id,
-    //     images,
-    //   })
-    // );
-  console.log(newForm)
-};
+    newForm.append("shopId", shopId); // Make sure this is correctly set
+
+    try {
+      const response = await fetch("http://localhost:3000/api/product/create-product", {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: newForm,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success("Product created successfully!");
+        navigate("/dashboard");
+      } else {
+        toast.error(data.message || "Failed to create product.");
+      }
+    } catch (error) {
+      toast.error("An error occurred while creating the product.");
+    }
+  };
 
   return (
-    <div className="w-[90%] 800px:w-[50%] bg-white  shadow h-[80vh] rounded-[4px] p-3 overflow-y-scroll pl-3">
+    <div className="w-[90%] 800px:w-[50%] bg-white shadow h-[80vh] rounded-[4px] p-3 overflow-y-scroll pl-3">
       <h5 className="text-[30px] font-Poppins text-center">Create Product</h5>
       {/* create product form */}
       <form onSubmit={handleSubmit}>
@@ -98,7 +90,7 @@ const CreateProduct = () => {
             onChange={(e) => setName(e.target.value)}
             placeholder="Enter your product name..."
           />
-        </div>      
+        </div>
         <br />
         <div>
           <label className="pb-2">
@@ -108,7 +100,6 @@ const CreateProduct = () => {
             cols="10"
             required
             rows="3"
-            type="text"
             name="description"
             value={description}
             className="mt-2 appearance-none block w-full pt-2 px-3 border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
@@ -127,9 +118,7 @@ const CreateProduct = () => {
             onChange={(e) => setCategory(e.target.value)}
           >
             <option value="Choose a category">Choose a category</option>
-                <option >
-                    Electronics, 
-                </option>
+            <option>Electronics</option>
           </select>
         </div>
         <br />
@@ -171,13 +160,13 @@ const CreateProduct = () => {
           />
         </div>
         <br />
-        {/* <div> */}
-          {/* <label className="pb-2">
+        {/* <div>
+          <label className="pb-2">
             Product Stock <span className="text-red-500">*</span>
           </label>
           <input
             type="number"
-            name="price"
+            name="stock"
             value={stock}
             className="mt-2 appearance-none block w-full px-3 h-[35px] border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             onChange={(e) => setStock(e.target.value)}
@@ -191,7 +180,7 @@ const CreateProduct = () => {
           </label>
           <input
             type="file"
-            name=""
+            name="images"
             id="upload"
             className="hidden"
             multiple

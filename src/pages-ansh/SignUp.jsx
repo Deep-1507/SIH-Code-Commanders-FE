@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import OAuth from '../components-ansh/OAuth';
-
+import OAuth from '../components-ansh/OAuth'
 export default function SignUp() {
   const [formData, setFormData] = useState({});
   const [error, setError] = useState(false);
@@ -16,7 +15,7 @@ export default function SignUp() {
     try {
       setLoading(true);
       setError(false);
-      const res = await fetch('/api/auth/signup', {
+      const res = await fetch('http://localhost:3000/api/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

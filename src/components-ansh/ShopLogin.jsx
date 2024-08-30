@@ -3,7 +3,6 @@ import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
-import { setShop } from '../redux/actions/seller.js'; // Adjust import path as needed
 
 
 const ShopLogin = () => {
@@ -21,7 +20,7 @@ const ShopLogin = () => {
             email: email,
             password:password
         }
-        const res = await fetch('/api/shop/login-shop', {
+        const res = await fetch('http://localhost:3000/api/shop/login-shop', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

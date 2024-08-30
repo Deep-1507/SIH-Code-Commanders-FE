@@ -26,7 +26,7 @@ const ShopCreate = () => {
         zipCode,
         password,
         }
-        const res = await fetch('/api/shop/create-shop', {
+        const res = await fetch('http://localhost:3000/api/shop/create-shop', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
