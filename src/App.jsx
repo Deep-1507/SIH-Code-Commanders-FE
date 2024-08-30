@@ -14,6 +14,10 @@ function App() {
       <Routes>
         <Route path="/" element={<h1>Welcome to the Home Page</h1>} />
         <Route path="/output" element={<Output />} />
+
+
+
+        {/* Ansh iske niche apne routes banana */}
       </Routes>
     </Router>
   )
