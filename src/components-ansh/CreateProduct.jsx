@@ -1,81 +1,96 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AiOutlinePlusCircle } from "react-icons/ai";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const CreateProduct = () => {
   const navigate = useNavigate();
+  const { productId } = useParams(); // Get productId from URL
+  const [formData, setFormData] = useState({
+    name: "",
+    price: "",
+    description: "",
+    image: null,
+    category: "",
+    tags: "",
+    originalPrice: "",
+    discountPrice: "",
+    shopId: ""
+  });
 
-  const [images, setImages] = useState([]);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
-  const [tags, setTags] = useState("");
-  const [originalPrice, setOriginalPrice] = useState();
-  const [discountPrice, setDiscountPrice] = useState();
-  const [stock, setStock] = useState();
-  const [shopId, setShopId] = useState(""); // Set this value as needed
+  useEffect(() => {
+    if (productId) {
+      fetchProductDetails();
+    }
+  }, [productId]);
 
-  const handleImageChange = (e) => {
-    const files = Array.from(e.target.files);
+  const fetchProductDetails = async () => {
+    try {
+      const response = await fetch(`http://localhost:3000/api/product/get-product/${productId}`);
+      
+      const data = await response.json();
+      if (response.ok) {
+        setFormData(data.product);
+      } else {
+        toast.error(data.message || "Failed to fetch product details.");
+      }
+    } catch (error) {
+      toast.error("An error occurred while fetching product details.");
+    }
+  };
 
-    setImages([]);
-
-    files.forEach((file) => {
-      const reader = new FileReader();
-
-      reader.onload = () => {
-        if (reader.readyState === 2) {
-          setImages((old) => [...old, reader.result]);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+  const handleChange = (e) => {
+    const { name, value, files } = e.target;
+    if (files) {
+      setFormData({
+        ...formData,
+        [name]: files[0],
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    
     const newForm = new FormData();
-
-    images.forEach((image) => {
-      newForm.append("images", image); // Use append instead of set for multiple images
+    Object.keys(formData).forEach((key) => {
+      if (formData[key] !== null && formData[key] !== "") {
+        newForm.append(key, formData[key]);
+      }
     });
-    newForm.append("name", name);
-    newForm.append("description", description);
-    newForm.append("category", category);
-    newForm.append("tags", tags);
-    newForm.append("originalPrice", originalPrice);
-    newForm.append("discountPrice", discountPrice);
-    newForm.append("stock", stock);
-    newForm.append("shopId", shopId); // Make sure this is correctly set
 
     try {
-      const response = await fetch("http://localhost:3000/api/product/create-product", {
-        method: "POST",
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const url = productId
+        ? `http://localhost:3000/api/product/update-product/${productId}`
+        : "http://localhost:3000/api/product/create-product";
+
+      const response = await fetch(url, {
+        method: productId ? "PUT" : "POST",
         body: newForm,
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        toast.success("Product created successfully!");
+        toast.success(productId ? "Product updated successfully!" : "Product created successfully!");
         navigate("/dashboard");
       } else {
-        toast.error(data.message || "Failed to create product.");
+        toast.error(data.message || (productId ? "Failed to update product." : "Failed to create product."));
       }
     } catch (error) {
-      toast.error("An error occurred while creating the product.");
+      toast.error("An error occurred while processing the product.");
     }
   };
 
   return (
     <div className="w-[90%] 800px:w-[50%] bg-white shadow h-[80vh] rounded-[4px] p-3 overflow-y-scroll pl-3">
-      <h5 className="text-[30px] font-Poppins text-center">Create Product</h5>
-      {/* create product form */}
+      <h5 className="text-[30px] font-Poppins text-center">{productId ? "Update Product" : "Create Product"}</h5>
+      {/* Create/Update product form */}
       <form onSubmit={handleSubmit}>
         <br />
         <div>
@@ -85,10 +100,24 @@ const CreateProduct = () => {
           <input
             type="text"
             name="name"
-            value={name}
+            value={formData.name}
             className="mt-2 appearance-none block w-full px-3 h-[35px] border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            onChange={(e) => setName(e.target.value)}
+            onChange={handleChange}
             placeholder="Enter your product name..."
+          />
+        </div>
+        <br />
+        <div>
+          <label className="pb-2">
+            Shop ID <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="shopId"
+            value={formData.shopId}
+            className="mt-2 appearance-none block w-full px-3 h-[35px] border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            onChange={handleChange}
+            placeholder="Enter your Shop Id..."
           />
         </div>
         <br />
@@ -101,9 +130,9 @@ const CreateProduct = () => {
             required
             rows="3"
             name="description"
-            value={description}
+            value={formData.description}
             className="mt-2 appearance-none block w-full pt-2 px-3 border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={handleChange}
             placeholder="Enter your product description..."
           ></textarea>
         </div>
@@ -113,12 +142,14 @@ const CreateProduct = () => {
             Category <span className="text-red-500">*</span>
           </label>
           <select
+            name="category"
             className="w-full mt-2 border h-[35px] rounded-[5px]"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            value={formData.category}
+            onChange={handleChange}
           >
-            <option value="Choose a category">Choose a category</option>
+            <option value="">Choose a category</option>
             <option>Electronics</option>
+            {/* Add more categories as needed */}
           </select>
         </div>
         <br />
@@ -127,9 +158,9 @@ const CreateProduct = () => {
           <input
             type="text"
             name="tags"
-            value={tags}
+            value={formData.tags}
             className="mt-2 appearance-none block w-full px-3 h-[35px] border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            onChange={(e) => setTags(e.target.value)}
+            onChange={handleChange}
             placeholder="Enter your product tags..."
           />
         </div>
@@ -138,11 +169,11 @@ const CreateProduct = () => {
           <label className="pb-2">Original Price</label>
           <input
             type="number"
-            name="price"
-            value={originalPrice}
+            name="originalPrice"
+            value={formData.originalPrice}
             className="mt-2 appearance-none block w-full px-3 h-[35px] border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            onChange={(e) => setOriginalPrice(e.target.value)}
-            placeholder="Enter your product price..."
+            onChange={handleChange}
+            placeholder="Enter your product original price..."
           />
         </div>
         <br />
@@ -152,59 +183,35 @@ const CreateProduct = () => {
           </label>
           <input
             type="number"
-            name="price"
-            value={discountPrice}
+            name="discountPrice"
+            value={formData.discountPrice}
             className="mt-2 appearance-none block w-full px-3 h-[35px] border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            onChange={(e) => setDiscountPrice(e.target.value)}
+            onChange={handleChange}
             placeholder="Enter your product price with discount..."
           />
         </div>
         <br />
-        {/* <div>
-          <label className="pb-2">
-            Product Stock <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="number"
-            name="stock"
-            value={stock}
-            className="mt-2 appearance-none block w-full px-3 h-[35px] border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            onChange={(e) => setStock(e.target.value)}
-            placeholder="Enter your product stock..."
-          />
-        </div> */}
-        <br />
         <div>
           <label className="pb-2">
-            Upload Images <span className="text-red-500">*</span>
+            Upload image <span className="text-red-500">*</span>
           </label>
           <input
             type="file"
-            name="images"
+            name="image"
             id="upload"
             className="hidden"
-            multiple
-            onChange={handleImageChange}
+            onChange={handleChange}
           />
           <div className="w-full flex items-center flex-wrap">
             <label htmlFor="upload">
               <AiOutlinePlusCircle size={30} className="mt-3" color="#555" />
             </label>
-            {images &&
-              images.map((i) => (
-                <img
-                  src={i}
-                  key={i}
-                  alt=""
-                  className="h-[120px] w-[120px] object-cover m-2"
-                />
-              ))}
           </div>
           <br />
           <div>
             <input
               type="submit"
-              value="Create"
+              value={productId ? "Update" : "Create"}
               className="mt-2 cursor-pointer appearance-none text-center block w-full px-3 h-[35px] border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
           </div>
