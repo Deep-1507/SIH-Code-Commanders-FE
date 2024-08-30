@@ -1,11 +1,5 @@
 import { useSelector } from 'react-redux';
-import { useRef, useState, useEffect } from 'react';
-import {
-  getDownloadURL,
-  getStorage,
-  ref,
-  uploadBytesResumable,
-} from 'firebase/storage';
+import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import {
   updateUserStart,
@@ -19,41 +13,11 @@ import {
 
 export default function Profile() {
   const dispatch = useDispatch();
-  const fileRef = useRef(null);
-  const [image, setImage] = useState(undefined);
-  const [imagePercent, setImagePercent] = useState(0);
-  const [imageError, setImageError] = useState(false);
   const [formData, setFormData] = useState({});
   const [updateSuccess, setUpdateSuccess] = useState(false);
 
   const { currentUser, loading, error } = useSelector((state) => state.user);
-  useEffect(() => {
-    if (image) {
-      handleFileUpload(image);
-    }
-  }, [image]);
-  const handleFileUpload = async (image) => {
-    const storage = getStorage(app);
-    const fileName = new Date().getTime() + image.name;
-    const storageRef = ref(storage, fileName);
-    const uploadTask = uploadBytesResumable(storageRef, image);
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        const progress =
-          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        setImagePercent(Math.round(progress));
-      },
-      (error) => {
-        setImageError(true);
-      },
-      () => {
-        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) =>
-          setFormData({ ...formData, profilePicture: downloadURL })
-        );
-      }
-    );
-  };
+  
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
   };
@@ -69,6 +33,7 @@ export default function Profile() {
         },
         body: JSON.stringify(formData),
       });
+
       const data = await res.json();
       if (data.success === false) {
         dispatch(updateUserFailure(data));
@@ -78,6 +43,7 @@ export default function Profile() {
       setUpdateSuccess(true);
     } catch (error) {
       dispatch(updateUserFailure(error));
+      console.error('Update error:', error);
     }
   };
 
@@ -87,37 +53,48 @@ export default function Profile() {
       const res = await fetch(`http://localhost:3000/api/user/delete/${currentUser._id}`, {
         method: 'DELETE',
       });
+
       const data = await res.json();
       if (data.success === false) {
         dispatch(deleteUserFailure(data));
         return;
       }
       dispatch(deleteUserSuccess(data));
+      // Redirect to login page or home page
+      window.location.href = '/login';
     } catch (error) {
       dispatch(deleteUserFailure(error));
+      console.error('Delete error:', error);
     }
   };
 
   const handleSignOut = async () => {
     try {
-      await fetch('http://localhost:3000/api/auth/signout');
-      dispatch(signOut())
+      const token = localStorage.getItem('token'); // Retrieve the token
+      const response = await fetch('http://localhost:3000/api/auth/signout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, // Include token in the request
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Sign out failed');
+      }
+
+      localStorage.removeItem('token'); // Remove token from storage
+      dispatch(signOut()); // Update Redux state
+      window.location.href = '/login'; // Redirect to login page
     } catch (error) {
-      console.log(error);
+      console.error('Sign out error:', error);
     }
   };
+
   return (
     <div className='p-3 max-w-lg mx-auto'>
       <h1 className='text-3xl font-semibold text-center my-7'>Profile</h1>
       <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
-        
-        {/* 
-      firebase storage rules:  
-      allow read;
-      allow write: if
-      request.resource.size < 2 * 1024 * 1024 &&
-      request.resource.contentType.matches('image/.*') */}
-      
         <input
           defaultValue={currentUser.username}
           type='text'
@@ -141,7 +118,11 @@ export default function Profile() {
           className='bg-slate-100 rounded-lg p-3'
           onChange={handleChange}
         />
-        <button className='bg-slate-700 text-white p-3 rounded-lg uppercase hover:opacity-95 disabled:opacity-80'>
+        <button
+          type='submit'
+          className='bg-slate-700 text-white p-3 rounded-lg uppercase hover:opacity-95 disabled:opacity-80'
+          disabled={loading}
+        >
           {loading ? 'Loading...' : 'Update'}
         </button>
       </form>
