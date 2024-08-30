@@ -2,18 +2,18 @@ import React, { useState } from "react";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import Footer from "../components-ansh/Footer";
 
-const Output2 = () => {
+const Output3 = () => {
   const [formData, setFormData] = useState({
-    itemName: "",
-    category: "construction", // Default category
-    specifications: [{ specification_name: "", value: "" }],
+    serviceType: "medical", // Default service type
+    location: "",
+    services: [], // Initialize as an empty array
   });
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [averagePrice, setAveragePrice] = useState(null);
   const [topSuggestions, setTopSuggestions] = useState([]);
+  const [averagePrice, setAveragePrice] = useState(null);
 
   const calculateReasonabilityScore = (rating, reviews) => {
     return Math.min(100, rating * 20 + reviews / 10);
@@ -28,36 +28,31 @@ const Output2 = () => {
     }));
   };
 
-  // Handle input changes for specifications
-  const handleSpecificationChange = (index, e) => {
+  // Handle input changes for services
+  const handleServiceChange = (index, e) => {
     const { name, value } = e.target;
-    const newSpecifications = [...formData.specifications];
-    newSpecifications[index][name] = value;
+    const newServices = [...formData.services];
+    newServices[index][name] = value;
     setFormData((prev) => ({
       ...prev,
-      specifications: newSpecifications,
+      services: newServices,
     }));
   };
 
-  // Add a new specification field
-  const addSpecification = () => {
+  // Add a new service field
+  const addService = () => {
     setFormData((prev) => ({
       ...prev,
-      specifications: [
-        ...prev.specifications,
-        { specification_name: "", value: "" },
-      ],
+      services: [...prev.services, { service_description: "" }],
     }));
   };
 
-  // Remove a specification field
-  const removeSpecification = (index) => {
-    const newSpecifications = formData.specifications.filter(
-      (_, i) => i !== index
-    );
+  // Remove a service field
+  const removeService = (index) => {
+    const newServices = formData.services.filter((_, i) => i !== index);
     setFormData((prev) => ({
       ...prev,
-      specifications: newSpecifications,
+      services: newServices,
     }));
   };
 
@@ -66,43 +61,58 @@ const Output2 = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
+  
     try {
+      // Join service descriptions into a single string, separated by commas
+      const descriptions = formData.services
+        .map((service) => service.service_description)
+        .filter(description => description.trim() !== "") // Filter out any empty descriptions
+        .join(", ");
+  
       const response = await fetch(
-        `http://127.0.0.1:8000/scrape-specs/${formData.category}`,
+        `http://localhost:3000/api/scrapedata/scrape/`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            item_name: formData.itemName,
-            specifications: formData.specifications,
+            location: formData.location,
+            description: descriptions, // Use a single string for description
           }),
         }
       );
-
+  
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
-
+  
       const result = await response.json();
+  
+      // Log the API response for debugging
+      console.log("API Response:", result);
+  
+      // Check if the response contains the expected data
+      if (!Array.isArray(result)) {
+        throw new Error("Unexpected API response format");
+      }
+  
       setData(result);
-
+  
       // Calculate the average price
-      const prices = result.map((item) =>
-        parseFloat(item.Price.replace(/[^0-9.-]+/g, ""))
+      const prices = result.map((service) =>
+        parseFloat(service.Price.replace(/[^0-9.-]+/g, ""))
       );
       const avgPrice =
         prices.reduce((acc, price) => acc + price, 0) / prices.length;
       setAveragePrice(avgPrice.toFixed(2));
-
+  
       // Identify top three suggestions
-      const scores = result.map((item, index) => ({
-        ...item,
+      const scores = result.map((service) => ({
+        ...service,
         reasonabilityScore: calculateReasonabilityScore(
-          item.Rating,
-          item.Reviews
+          service.Rating,
+          service.Reviews
         ),
       }));
       const topThree = scores
@@ -116,6 +126,7 @@ const Output2 = () => {
       setLoading(false);
     }
   };
+  
 
   return (
     <div className="bg-dark min-h-screen">
@@ -123,87 +134,77 @@ const Output2 = () => {
         <div className="max-w-4xl mx-auto">
           <div className="text-white">
             <div className="flex justify-center items-center mb-4">
-              <Icon icon="carbon:model" className="text-white text-8xl m-5" />
+              <Icon icon="carbon:service" className="text-white text-8xl m-5" />
             </div>
 
             <h2 className="text-xl font-bold mb-4 text-center">
-              Search by Specification
+              Search by Service
             </h2>
             <p className="mb-4 text-center">
-              Search for products based on detailed specifications to find
-              exactly what you need.
+              Search for services based on your location and specific criteria.
             </p>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Dropdown for Category */}
+            {/* Dropdown for Service Type */}
             <div>
               <label
-                htmlFor="category"
+                htmlFor="serviceType"
                 className="block text-sm font-medium text-gray-700"
               >
-                Category
+                Service Type
               </label>
               <select
-                id="category"
-                name="category"
-                value={formData.category}
+                id="serviceType"
+                name="serviceType"
+                value={formData.serviceType}
                 onChange={handleChange}
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               >
-                <option value="construction">Construction</option>
-                <option value="electronics">Electronics</option>
                 <option value="medical">Medical</option>
+                <option value="consulting">Consulting</option>
+                <option value="legal">Legal</option>
               </select>
             </div>
 
             <div>
               <label
-                htmlFor="itemName"
+                htmlFor="location"
                 className="block text-sm font-medium text-gray-700"
               >
-                Item Name
+                Location
               </label>
               <input
                 type="text"
-                id="itemName"
-                name="itemName"
-                value={formData.itemName}
+                id="location"
+                name="location"
+                value={formData.location}
                 onChange={handleChange}
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="Enter item name"
+                placeholder="Enter location"
               />
             </div>
 
-            {/* Specifications Fields */}
+            {/* Services Fields */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Specifications
+                Services
               </label>
-              {formData.specifications.map((spec, index) => (
+              {formData.services.map((service, index) => (
                 <div key={index} className="flex space-x-4 mt-2">
                   <input
                     type="text"
-                    name="specification_name"
-                    value={spec.specification_name}
-                    onChange={(e) => handleSpecificationChange(index, e)}
+                    name="service_description"
+                    value={service.service_description}
+                    onChange={(e) => handleServiceChange(index, e)}
                     required
-                    className="block w-1/2 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Specification Name"
-                  />
-                  <input
-                    type="text"
-                    name="value"
-                    value={spec.value}
-                    onChange={(e) => handleSpecificationChange(index, e)}
-                    required
-                    className="block w-1/2 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Value"
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Service Description"
                   />
                   <button
                     type="button"
-                    onClick={() => removeSpecification(index)}
+                    onClick={() => removeService(index)}
                     className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
                   >
                     Remove
@@ -212,10 +213,10 @@ const Output2 = () => {
               ))}
               <button
                 type="button"
-                onClick={addSpecification}
+                onClick={addService}
                 className="mt-4 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
               >
-                Add Specification
+                Add Service
               </button>
             </div>
 
@@ -251,16 +252,16 @@ const Output2 = () => {
               <div className="mt-8 p-4 bg-blue-100 text-blue-800 rounded-md mb-10">
                 <h3 className="text-xl font-semibold mb-4">Top Suggestions</h3>
                 <ul className="space-y-2">
-                  {topSuggestions.map((item, index) => (
+                  {topSuggestions.map((service, index) => (
                     <li key={index} className="flex justify-between">
                       <a
-                        href={item.Website}
+                        href={service.Website}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        <span>{item["Product Name"]}</span>
+                        <span>{service["Service Description"]}</span>
                       </a>
-                      <span>Score: {item.reasonabilityScore}</span>
+                      <span>Score: {service.reasonabilityScore}</span>
                     </li>
                   ))}
                 </ul>
@@ -268,47 +269,32 @@ const Output2 = () => {
             )}
 
             <div className="overflow-x-auto rounded-md">
-              <table className="min-w-full bg-white border ">
+              <table className="min-w-full divide-y divide-gray-300 bg-white">
                 <thead>
                   <tr>
-                    <th className="py-2 px-4 border-b">Item Name</th>
-                    <th className="py-2 px-4 border-b">Specifications</th>
-                    <th className="py-2 px-4 border-b">Seller</th>
-                    <th className="py-2 px-4 border-b">Price</th>
-                    <th className="py-2 px-4 border-b">Last Updated</th>
-                    <th className="py-2 px-4 border-b">Rating</th>
-                    <th className="py-2 px-4 border-b">Reviews</th>
-                    <th className="py-2 px-4 border-b">Reasonability Score</th>
+                    <th className="px-4 py-2">Service Description</th>
+                    <th className="px-4 py-2">Price</th>
+                    <th className="px-4 py-2">Rating</th>
+                    <th className="px-4 py-2">Reviews</th>
+                    <th className="px-4 py-2">Website</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.map((item, index) => (
-                    <tr key={index}>
-                      <td className="py-2 px-4 border-b">
-                        {item["Product Name"]}
-                      </td>
-                      <td className="py-2 px-4 border-b">
-                        {Array.isArray(item.Specifications)
-                          ? item.Specifications.join(", ")
-                          : item.Specifications}
-                      </td>
-                      <td className="py-2 px-4 border-b">
+                  {data.map((service, index) => (
+                    <tr key={index} className="hover:bg-gray-100">
+                      <td className="px-4 py-2">{service["Service Description"]}</td>
+                      <td className="px-4 py-2">{service.Price}</td>
+                      <td className="px-4 py-2">{service.Rating}</td>
+                      <td className="px-4 py-2">{service.Reviews}</td>
+                      <td className="px-4 py-2">
                         <a
-                          href={item.Website}
+                          href={service.Website}
                           target="_blank"
                           rel="noopener noreferrer"
+                          className="text-blue-500 hover:underline"
                         >
-                          {item.Seller}
+                          Visit
                         </a>
-                      </td>
-                      <td className="py-2 px-4 border-b">{item.Price}</td>
-                      <td className="py-2 px-4 border-b">
-                        {item.last_updated}
-                      </td>
-                      <td className="py-2 px-4 border-b">{item.Rating}</td>
-                      <td className="py-2 px-4 border-b">{item.Reviews}</td>
-                      <td className="py-2 px-4 border-b">
-                        {calculateReasonabilityScore(item.Rating, item.Reviews)}
                       </td>
                     </tr>
                   ))}
@@ -323,4 +309,4 @@ const Output2 = () => {
   );
 };
 
-export default Output2;
+export default Output3;

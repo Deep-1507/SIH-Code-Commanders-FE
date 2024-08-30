@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-
+import { Icon } from '@iconify/react/dist/iconify.js';
+import Footer from '../components-ansh/Footer';
 const Output = () => {
   const [formData, setFormData] = useState({
     itemName: '',
@@ -76,8 +77,23 @@ const Output = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h2 className="text-2xl font-bold mb-4">Input Form</h2>
+    
+    <div className="bg-dark min-h-screen">
+      <div className=' p-12'>
+
+        <div className='max-w-4xl mx-auto'>
+
+      
+
+      <div className='text-white'>
+
+      <div className="flex justify-center items-center mb-4">
+            <Icon icon="simple-icons:cmake" className="text-white text-8xl m-5" />
+          </div>
+
+      <h2 className="text-2xl font-bold mb-4 text-center">Search by Make/Model</h2>
+          <p className="mb-4 text-center">Find products based on make or model to streamline your procurement process.</p>
+      </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Dropdown for Item Type */}
         <div>
@@ -109,7 +125,7 @@ const Output = () => {
             value={formData.itemName}
             onChange={handleChange}
             required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black"
             placeholder="Enter item name"
           />
         </div>
@@ -151,9 +167,9 @@ const Output = () => {
           Submit
         </button>
       </form>
-
+      </div>
       {/* Loading Indicator */}
-      {loading && <p className="mt-4 text-gray-500">Loading...</p>}
+      {loading && <p className="mt-4 text-white">Loading...</p>}
 
       {/* Error Message */}
       {error && <p className="mt-4 text-red-500">Error: {error}</p>}
@@ -161,7 +177,7 @@ const Output = () => {
       {/* Data Table */}
       {data.length > 0 && (
         <div className="mt-8">
-          <h3 className="text-xl font-semibold mb-4">Results</h3>
+          <h3 className="text-3xl font-semibold mb-4 text-white text-center">Results</h3>
           {/* Display Average Price */}
           {averagePrice && (
             <div className="mt-4 p-4 bg-green-100 text-green-800 rounded-md">
@@ -171,7 +187,7 @@ const Output = () => {
 
           {/* Top Suggestions */}
           {topSuggestions.length > 0 && (
-            <div className="mt-8 p-4 bg-blue-100 text-blue-800 rounded-md">
+            <div className="mt-8 p-4 bg-blue-100 text-blue-800 rounded-md mb-10">
               <h3 className="text-xl font-semibold mb-4">Top Suggestions</h3>
               <ul className="space-y-2">
                 {topSuggestions.map((item, index) => (
@@ -184,7 +200,7 @@ const Output = () => {
             </div>
           )}
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-md">
             <table className="min-w-full bg-white border">
               <thead>
                 <tr>
@@ -216,6 +232,8 @@ const Output = () => {
           </div>
         </div>
       )}
+      </div>
+      <Footer/>
     </div>
   );
 };

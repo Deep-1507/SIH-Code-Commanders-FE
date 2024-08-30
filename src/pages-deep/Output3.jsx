@@ -2,22 +2,24 @@ import React, { useState } from "react";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import Footer from "../components-ansh/Footer";
 
-const Output2 = () => {
+const Output3 = () => {
   const [formData, setFormData] = useState({
-    itemName: "",
-    category: "construction", // Default category
-    specifications: [{ specification_name: "", value: "" }],
+    serviceType: "medical", // Default service type
+    location: "",
+    services: [], // Initialize as an empty array
   });
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [averagePrice, setAveragePrice] = useState(null);
   const [topSuggestions, setTopSuggestions] = useState([]);
+  const [averagePrice, setAveragePrice] = useState(null);
+
 
   const calculateReasonabilityScore = (rating, reviews) => {
     return Math.min(100, rating * 20 + reviews / 10);
   };
+
 
   // Handle input changes for the main form fields
   const handleChange = (e) => {
@@ -28,36 +30,39 @@ const Output2 = () => {
     }));
   };
 
-  // Handle input changes for specifications
-  const handleSpecificationChange = (index, e) => {
+  // Handle input changes for services
+  const handleServiceChange = (index, e) => {
     const { name, value } = e.target;
-    const newSpecifications = [...formData.specifications];
-    newSpecifications[index][name] = value;
+    console.log("Handling change for index:", index, "name:", name, "value:", value); // Debugging statement
+
+    const newServices = [...formData.services];
+    newServices[index] = {
+      ...newServices[index],
+      [name]: value,
+    };
+
     setFormData((prev) => ({
       ...prev,
-      specifications: newSpecifications,
+      services: newServices,
+    }));
+
+    console.log("Updated services:", newServices); // Debugging statement
+  };
+
+  // Add a new service field
+  const addService = () => {
+    setFormData((prev) => ({
+      ...prev,
+      services: [...prev.services, { description: "" }],
     }));
   };
 
-  // Add a new specification field
-  const addSpecification = () => {
+  // Remove a service field
+  const removeService = (index) => {
+    const newServices = formData.services.filter((_, i) => i !== index);
     setFormData((prev) => ({
       ...prev,
-      specifications: [
-        ...prev.specifications,
-        { specification_name: "", value: "" },
-      ],
-    }));
-  };
-
-  // Remove a specification field
-  const removeSpecification = (index) => {
-    const newSpecifications = formData.specifications.filter(
-      (_, i) => i !== index
-    );
-    setFormData((prev) => ({
-      ...prev,
-      specifications: newSpecifications,
+      services: newServices,
     }));
   };
 
@@ -69,15 +74,18 @@ const Output2 = () => {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/scrape-specs/${formData.category}`,
+        `http://localhost:3000/api/scrapedata/scrape/`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            item_name: formData.itemName,
-            specifications: formData.specifications,
+            location: formData.location,
+            description: formData.services
+              .map((service) => service.description)
+              .filter(desc => desc.trim() !== "") // Filter out empty descriptions
+              .join(", "), // Combine service descriptions into a single string
           }),
         }
       );
@@ -89,20 +97,11 @@ const Output2 = () => {
       const result = await response.json();
       setData(result);
 
-      // Calculate the average price
-      const prices = result.map((item) =>
-        parseFloat(item.Price.replace(/[^0-9.-]+/g, ""))
-      );
-      const avgPrice =
-        prices.reduce((acc, price) => acc + price, 0) / prices.length;
-      setAveragePrice(avgPrice.toFixed(2));
-
-      // Identify top three suggestions
-      const scores = result.map((item, index) => ({
-        ...item,
+      const scores = result.map((service) => ({
+        ...service,
         reasonabilityScore: calculateReasonabilityScore(
-          item.Rating,
-          item.Reviews
+          service.rating,
+          service.reviews
         ),
       }));
       const topThree = scores
@@ -110,6 +109,8 @@ const Output2 = () => {
         .sort((a, b) => b.reasonabilityScore - a.reasonabilityScore)
         .slice(0, 3);
       setTopSuggestions(topThree);
+
+
     } catch (err) {
       setError(err.message);
     } finally {
@@ -123,87 +124,83 @@ const Output2 = () => {
         <div className="max-w-4xl mx-auto">
           <div className="text-white">
             <div className="flex justify-center items-center mb-4">
-              <Icon icon="carbon:model" className="text-white text-8xl m-5" />
-            </div>
-
-            <h2 className="text-xl font-bold mb-4 text-center">
-              Search by Specification
-            </h2>
-            <p className="mb-4 text-center">
-              Search for products based on detailed specifications to find
-              exactly what you need.
-            </p>
-          </div>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Dropdown for Category */}
-            <div>
-              <label
-                htmlFor="category"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Category
-              </label>
-              <select
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="construction">Construction</option>
-                <option value="electronics">Electronics</option>
-                <option value="medical">Medical</option>
-              </select>
-            </div>
-
-            <div>
-              <label
-                htmlFor="itemName"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Item Name
-              </label>
-              <input
-                type="text"
-                id="itemName"
-                name="itemName"
-                value={formData.itemName}
-                onChange={handleChange}
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="Enter item name"
+              <Icon
+                icon="fluent-mdl2:service-off"
+                className="text-white text-8xl m-5"
               />
             </div>
 
-            {/* Specifications Fields */}
+            <h2 className="text-xl font-bold mb-4 text-center">
+              Search Service Provider
+            </h2>
+            <p className="mb-4 text-center">
+              Identify and connect with service providers to meet your specific
+              needs.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Dropdown for Service Type */}
+            <div>
+              <label
+                htmlFor="serviceType"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Service Type
+              </label>
+              <select
+                id="serviceType"
+                name="serviceType"
+                value={formData.serviceType}
+                onChange={handleChange}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="medical">Medical</option>
+                <option value="electrical">Electrical</option>
+                <option value="civil">Civil Maintenance</option>
+              </select>
+            </div>
+
+            {/* Input for Location */}
+            <div>
+              <label
+                htmlFor="location"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Location
+              </label>
+              <input
+                type="text"
+                id="location"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="Enter your location"
+              />
+            </div>
+
+            {/* Services Fields */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Specifications
+                Services
               </label>
-              {formData.specifications.map((spec, index) => (
+              {formData.services.map((service, index) => (
                 <div key={index} className="flex space-x-4 mt-2">
                   <input
                     type="text"
-                    name="specification_name"
-                    value={spec.specification_name}
-                    onChange={(e) => handleSpecificationChange(index, e)}
+                    name="description"
+                    value={service.description}
+                    onChange={(e) => handleServiceChange(index, e)}
                     required
-                    className="block w-1/2 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Specification Name"
-                  />
-                  <input
-                    type="text"
-                    name="value"
-                    value={spec.value}
-                    onChange={(e) => handleSpecificationChange(index, e)}
-                    required
-                    className="block w-1/2 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Value"
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Service Description"
                   />
                   <button
                     type="button"
-                    onClick={() => removeSpecification(index)}
+                    onClick={() => removeService(index)}
                     className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
                   >
                     Remove
@@ -212,10 +209,10 @@ const Output2 = () => {
               ))}
               <button
                 type="button"
-                onClick={addSpecification}
+                onClick={addService}
                 className="mt-4 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
               >
-                Add Specification
+                Add Service
               </button>
             </div>
 
@@ -227,6 +224,7 @@ const Output2 = () => {
             </button>
           </form>
         </div>
+
         {/* Loading Indicator */}
         {loading && <p className="mt-4 text-gray-500">Loading...</p>}
 
@@ -239,28 +237,23 @@ const Output2 = () => {
             <h3 className="text-3xl font-semibold mb-4 text-white text-center">
               Results
             </h3>
-            {/* Display Average Price */}
-            {averagePrice && (
-              <div className="mt-4 p-4 bg-green-100 text-green-800 rounded-md">
-                <p>Estimated Price: ₹{averagePrice}</p>
-              </div>
-            )}
 
-            {/* Top Suggestions */}
             {topSuggestions.length > 0 && (
               <div className="mt-8 p-4 bg-blue-100 text-blue-800 rounded-md mb-10">
                 <h3 className="text-xl font-semibold mb-4">Top Suggestions</h3>
                 <ul className="space-y-2">
-                  {topSuggestions.map((item, index) => (
+                  {topSuggestions.map((service, index) => (
                     <li key={index} className="flex justify-between">
                       <a
-                        href={item.Website}
+                        href={service.website}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        <span>{item["Product Name"]}</span>
+                        <span>{
+service.service_provider
+}</span>
                       </a>
-                      <span>Score: {item.reasonabilityScore}</span>
+                      <span>Score: {service.reasonabilityScore}</span>
                     </li>
                   ))}
                 </ul>
@@ -268,48 +261,36 @@ const Output2 = () => {
             )}
 
             <div className="overflow-x-auto rounded-md">
-              <table className="min-w-full bg-white border ">
+              <table className="min-w-full bg-white border">
                 <thead>
                   <tr>
-                    <th className="py-2 px-4 border-b">Item Name</th>
-                    <th className="py-2 px-4 border-b">Specifications</th>
-                    <th className="py-2 px-4 border-b">Seller</th>
-                    <th className="py-2 px-4 border-b">Price</th>
-                    <th className="py-2 px-4 border-b">Last Updated</th>
+                    <th className="py-2 px-4 border-b">Service Provider</th>
+                    <th className="py-2 px-4 border-b">Specialization</th>
+                    <th className="py-2 px-4 border-b">Contact No.</th>
                     <th className="py-2 px-4 border-b">Rating</th>
                     <th className="py-2 px-4 border-b">Reviews</th>
-                    <th className="py-2 px-4 border-b">Reasonability Score</th>
+                    <th className="py-2 px-4 border-b">Location</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.map((item, index) => (
                     <tr key={index}>
                       <td className="py-2 px-4 border-b">
-                        {item["Product Name"]}
-                      </td>
-                      <td className="py-2 px-4 border-b">
-                        {Array.isArray(item.Specifications)
-                          ? item.Specifications.join(", ")
-                          : item.Specifications}
-                      </td>
-                      <td className="py-2 px-4 border-b">
                         <a
-                          href={item.Website}
+                          href={item.website}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          {item.Seller}
+                          {item.service_provider}
                         </a>
                       </td>
-                      <td className="py-2 px-4 border-b">{item.Price}</td>
                       <td className="py-2 px-4 border-b">
-                        {item.last_updated}
+                        {item.specialization}
                       </td>
-                      <td className="py-2 px-4 border-b">{item.Rating}</td>
-                      <td className="py-2 px-4 border-b">{item.Reviews}</td>
-                      <td className="py-2 px-4 border-b">
-                        {calculateReasonabilityScore(item.Rating, item.Reviews)}
-                      </td>
+                      <td className="py-2 px-4 border-b">{item.phone}</td>
+                      <td className="py-2 px-4 border-b">{item.rating}</td>
+                      <td className="py-2 px-4 border-b">{item.reviews}</td>
+                      <td className="py-2 px-4 border-b">{item.location}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -323,4 +304,4 @@ const Output2 = () => {
   );
 };
 
-export default Output2;
+export default Output3;
