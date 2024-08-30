@@ -10,6 +10,7 @@ import ShopCreate from "./components-ansh/ShopCreate.jsx";
 import ShopLogin from "./components-ansh/ShopLogin.jsx";
 import CreateProduct from "./components-ansh/CreateProduct.jsx";
 import Output from "./pages-deep/Output.jsx";
+import Output2 from "./pages-deep/Output2.jsx";
 import { useState } from "react";
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
       <Header />
       <Routes>
         <Route path="/output" element={<Output />} />
+        <Route path="/output2" element={<Output2 />} />
 
         <Route path="/about" element={<About />} />
         <Route path="/sign-in" element={<SignIn />} />

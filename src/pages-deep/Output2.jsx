@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
-const Output = () => {
+const Output2 = () => {
   const [formData, setFormData] = useState({
     itemName: '',
-    seller: '',
-    model: '',
     category: 'construction', // Default category
+    specifications: [{ specification_name: '', value: '' }],
   });
 
   const [data, setData] = useState([]);
@@ -15,15 +14,43 @@ const Output = () => {
   const [topSuggestions, setTopSuggestions] = useState([]);
 
   const calculateReasonabilityScore = (rating, reviews) => {
-    return Math.min(100, (rating * 20) + (reviews / 10));
+    return Math.min(100, rating * 20 + reviews / 10);
   };
 
-  // Handle input changes
+  // Handle input changes for the main form fields
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
+    }));
+  };
+
+  // Handle input changes for specifications
+  const handleSpecificationChange = (index, e) => {
+    const { name, value } = e.target;
+    const newSpecifications = [...formData.specifications];
+    newSpecifications[index][name] = value;
+    setFormData((prev) => ({
+      ...prev,
+      specifications: newSpecifications,
+    }));
+  };
+
+  // Add a new specification field
+  const addSpecification = () => {
+    setFormData((prev) => ({
+      ...prev,
+      specifications: [...prev.specifications, { specification_name: '', value: '' }],
+    }));
+  };
+
+  // Remove a specification field
+  const removeSpecification = (index) => {
+    const newSpecifications = formData.specifications.filter((_, i) => i !== index);
+    setFormData((prev) => ({
+      ...prev,
+      specifications: newSpecifications,
     }));
   };
 
@@ -34,15 +61,14 @@ const Output = () => {
     setError(null);
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/scrape-make-model/${formData.category}`, {
+      const response = await fetch(`http://127.0.0.1:8000/scrape-specs/${formData.category}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           item_name: formData.itemName,
-          seller: formData.seller,
-          model: formData.model,
+          specifications: formData.specifications,
         }),
       });
 
@@ -54,7 +80,7 @@ const Output = () => {
       setData(result);
 
       // Calculate the average price
-      const prices = result.map(item => parseFloat(item.Price.replace(/[^0-9.-]+/g, "")));
+      const prices = result.map((item) => parseFloat(item.Price.replace(/[^0-9.-]+/g, '')));
       const avgPrice = prices.reduce((acc, price) => acc + price, 0) / prices.length;
       setAveragePrice(avgPrice.toFixed(2));
 
@@ -79,10 +105,10 @@ const Output = () => {
     <div className="max-w-4xl mx-auto p-6">
       <h2 className="text-2xl font-bold mb-4">Input Form</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Dropdown for Item Type */}
+        {/* Dropdown for Category */}
         <div>
           <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-            Item Type
+            Category
           </label>
           <select
             id="category"
@@ -114,34 +140,45 @@ const Output = () => {
           />
         </div>
 
+        {/* Specifications Fields */}
         <div>
-          <label htmlFor="seller" className="block text-sm font-medium text-gray-700">
-            Seller
-          </label>
-          <input
-            type="text"
-            id="seller"
-            name="seller"
-            value={formData.seller}
-            onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            placeholder="Enter seller name"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="model" className="block text-sm font-medium text-gray-700">
-            Model
-          </label>
-          <input
-            type="text"
-            id="model"
-            name="model"
-            value={formData.model}
-            onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            placeholder="Enter model"
-          />
+          <label className="block text-sm font-medium text-gray-700">Specifications</label>
+          {formData.specifications.map((spec, index) => (
+            <div key={index} className="flex space-x-4 mt-2">
+              <input
+                type="text"
+                name="specification_name"
+                value={spec.specification_name}
+                onChange={(e) => handleSpecificationChange(index, e)}
+                required
+                className="block w-1/2 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="Specification Name"
+              />
+              <input
+                type="text"
+                name="value"
+                value={spec.value}
+                onChange={(e) => handleSpecificationChange(index, e)}
+                required
+                className="block w-1/2 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="Value"
+              />
+              <button
+                type="button"
+                onClick={() => removeSpecification(index)}
+                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addSpecification}
+            className="mt-4 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            Add Specification
+          </button>
         </div>
 
         <button
@@ -176,7 +213,9 @@ const Output = () => {
               <ul className="space-y-2">
                 {topSuggestions.map((item, index) => (
                   <li key={index} className="flex justify-between">
-                    <a href={item.Website} target="_blank" rel="noopener noreferrer"><span>{item['Product Name']}</span></a>
+                    <a href={item.Website} target="_blank" rel="noopener noreferrer">
+                      <span>{item['Product Name']}</span>
+                    </a>
                     <span>Score: {item.reasonabilityScore}</span>
                   </li>
                 ))}
@@ -190,7 +229,7 @@ const Output = () => {
                 <tr>
                   <th className="py-2 px-4 border-b">Item Name</th>
                   <th className="py-2 px-4 border-b">Specifications</th>
-                  <th className="py-2 px-4 border-b">Source</th>
+                  <th className="py-2 px-4 border-b">Seller</th>
                   <th className="py-2 px-4 border-b">Price</th>
                   <th className="py-2 px-4 border-b">Last Updated</th>
                   <th className="py-2 px-4 border-b">Rating</th>
@@ -200,10 +239,16 @@ const Output = () => {
               </thead>
               <tbody>
                 {data.map((item, index) => (
-                  <tr key={index} className="hover:bg-gray-100">
+                  <tr key={index}>
                     <td className="py-2 px-4 border-b">{item['Product Name']}</td>
-                    <td className="py-2 px-4 border-b">{item.specifications}</td>
-                    <td className="py-2 px-4 border-b"><a href={item.Website} target="_blank" rel="noopener noreferrer">{item.Seller}</a></td>
+                    <td className="py-2 px-4 border-b">
+                      {Array.isArray(item.Specifications)
+                        ? item.Specifications.join(', ')
+                        : item.Specifications}
+                    </td>
+                    <td className="py-2 px-4 border-b"><a href={item.Website} target="_blank" rel="noopener noreferrer">
+                      {item.Seller}
+                      </a></td>
                     <td className="py-2 px-4 border-b">{item.Price}</td>
                     <td className="py-2 px-4 border-b">{item.last_updated}</td>
                     <td className="py-2 px-4 border-b">{item.Rating}</td>
@@ -220,4 +265,4 @@ const Output = () => {
   );
 };
 
-export default Output;
+export default Output2;
