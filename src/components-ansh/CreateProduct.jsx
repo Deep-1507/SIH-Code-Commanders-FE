@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AiOutlinePlusCircle } from "react-icons/ai";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const CreateProduct = () => {
   const navigate = useNavigate();
-
+  const { productId } = useParams(); // Get productId from URL
   const [formData, setFormData] = useState({
     name: "",
     price: "",
@@ -15,8 +15,29 @@ const CreateProduct = () => {
     tags: "",
     originalPrice: "",
     discountPrice: "",
-    shopId:""
+    shopId: ""
   });
+
+  useEffect(() => {
+    if (productId) {
+      fetchProductDetails();
+    }
+  }, [productId]);
+
+  const fetchProductDetails = async () => {
+    try {
+      const response = await fetch(`http://localhost:3000/api/product/get-product/${productId}`);
+      
+      const data = await response.json();
+      if (response.ok) {
+        setFormData(data.product);
+      } else {
+        toast.error(data.message || "Failed to fetch product details.");
+      }
+    } catch (error) {
+      toast.error("An error occurred while fetching product details.");
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -35,7 +56,7 @@ const CreateProduct = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    
     const newForm = new FormData();
     Object.keys(formData).forEach((key) => {
       if (formData[key] !== null && formData[key] !== "") {
@@ -44,28 +65,32 @@ const CreateProduct = () => {
     });
 
     try {
-      const response = await fetch("http://localhost:3000/api/product/create-product", {
-        method: "POST",
+      const url = productId
+        ? `http://localhost:3000/api/product/update-product/${productId}`
+        : "http://localhost:3000/api/product/create-product";
+
+      const response = await fetch(url, {
+        method: productId ? "PUT" : "POST",
         body: newForm,
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        toast.success("Product created successfully!");
+        toast.success(productId ? "Product updated successfully!" : "Product created successfully!");
         navigate("/dashboard");
       } else {
-        toast.error(data.message || "Failed to create product.");
+        toast.error(data.message || (productId ? "Failed to update product." : "Failed to create product."));
       }
     } catch (error) {
-      toast.error("An error occurred while creating the product.");
+      toast.error("An error occurred while processing the product.");
     }
   };
 
   return (
     <div className="w-[90%] 800px:w-[50%] bg-white shadow h-[80vh] rounded-[4px] p-3 overflow-y-scroll pl-3">
-      <h5 className="text-[30px] font-Poppins text-center">Create Product</h5>
-      {/* Create product form */}
+      <h5 className="text-[30px] font-Poppins text-center">{productId ? "Update Product" : "Create Product"}</h5>
+      {/* Create/Update product form */}
       <form onSubmit={handleSubmit}>
         <br />
         <div>
@@ -186,7 +211,7 @@ const CreateProduct = () => {
           <div>
             <input
               type="submit"
-              value="Create"
+              value={productId ? "Update" : "Create"}
               className="mt-2 cursor-pointer appearance-none text-center block w-full px-3 h-[35px] border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
           </div>
