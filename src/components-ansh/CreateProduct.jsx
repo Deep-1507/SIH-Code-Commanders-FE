@@ -11,36 +11,29 @@ const CreateProduct = () => {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [tags, setTags] = useState("");
-  const [originalPrice, setOriginalPrice] = useState();
-  const [discountPrice, setDiscountPrice] = useState();
-  const [stock, setStock] = useState();
-  const [shopId, setShopId] = useState(""); // Set this value as needed
+  const [originalPrice, setOriginalPrice] = useState("");
+  const [discountPrice, setDiscountPrice] = useState("");
+  const [stock, setStock] = useState("");
+  const [shopId, setShopId] = useState(""); // Ensure this is correctly set
 
+  // Handle image input change
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
-
-    setImages([]);
-
-    files.forEach((file) => {
-      const reader = new FileReader();
-
-      reader.onload = () => {
-        if (reader.readyState === 2) {
-          setImages((old) => [...old, reader.result]);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+    setImages(files);
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const newForm = new FormData();
-
-    images.forEach((image) => {
-      newForm.append("images", image); // Use append instead of set for multiple images
+    
+    // Append all files to FormData
+    images.forEach((file, index) => {
+      newForm.append(`images[${index}]`, file);
     });
+
+    // Append other form data
     newForm.append("name", name);
     newForm.append("description", description);
     newForm.append("category", category);
@@ -48,14 +41,11 @@ const CreateProduct = () => {
     newForm.append("originalPrice", originalPrice);
     newForm.append("discountPrice", discountPrice);
     newForm.append("stock", stock);
-    newForm.append("shopId", shopId); // Make sure this is correctly set
+    newForm.append("shopId", shopId);
 
     try {
       const response = await fetch("http://localhost:3000/api/product/create-product", {
         method: "POST",
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: newForm,
       });
 
@@ -75,7 +65,7 @@ const CreateProduct = () => {
   return (
     <div className="w-[90%] 800px:w-[50%] bg-white shadow h-[80vh] rounded-[4px] p-3 overflow-y-scroll pl-3">
       <h5 className="text-[30px] font-Poppins text-center">Create Product</h5>
-      {/* create product form */}
+      {/* Create product form */}
       <form onSubmit={handleSubmit}>
         <br />
         <div>
@@ -89,6 +79,20 @@ const CreateProduct = () => {
             className="mt-2 appearance-none block w-full px-3 h-[35px] border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             onChange={(e) => setName(e.target.value)}
             placeholder="Enter your product name..."
+          />
+        </div>
+        <br />
+        <div>
+          <label className="pb-2">
+            Shop ID <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="shopId"
+            value={shopId}
+            className="mt-2 appearance-none block w-full px-3 h-[35px] border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            onChange={(e) => setShopId(e.target.value)}
+            placeholder="Enter your Shop Id..."
           />
         </div>
         <br />
@@ -138,7 +142,7 @@ const CreateProduct = () => {
           <label className="pb-2">Original Price</label>
           <input
             type="number"
-            name="price"
+            name="originalPrice"
             value={originalPrice}
             className="mt-2 appearance-none block w-full px-3 h-[35px] border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             onChange={(e) => setOriginalPrice(e.target.value)}
@@ -152,27 +156,13 @@ const CreateProduct = () => {
           </label>
           <input
             type="number"
-            name="price"
+            name="discountPrice"
             value={discountPrice}
             className="mt-2 appearance-none block w-full px-3 h-[35px] border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             onChange={(e) => setDiscountPrice(e.target.value)}
             placeholder="Enter your product price with discount..."
           />
         </div>
-        <br />
-        {/* <div>
-          <label className="pb-2">
-            Product Stock <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="number"
-            name="stock"
-            value={stock}
-            className="mt-2 appearance-none block w-full px-3 h-[35px] border border-gray-300 rounded-[3px] placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            onChange={(e) => setStock(e.target.value)}
-            placeholder="Enter your product stock..."
-          />
-        </div> */}
         <br />
         <div>
           <label className="pb-2">
@@ -191,10 +181,10 @@ const CreateProduct = () => {
               <AiOutlinePlusCircle size={30} className="mt-3" color="#555" />
             </label>
             {images &&
-              images.map((i) => (
+              Array.from(images).map((image, index) => (
                 <img
-                  src={i}
-                  key={i}
+                  src={URL.createObjectURL(image)}
+                  key={index}
                   alt=""
                   className="h-[120px] w-[120px] object-cover m-2"
                 />
