@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
-import Output from './Output'
+import Output from './pages-deep/Output'
+
 
 function App() {
   const [count, setCount] = useState(0)
