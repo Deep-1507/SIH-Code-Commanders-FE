@@ -1,7 +1,7 @@
 import React from 'react';
-import Footer from '../components/Footer';
-import ServicesSection from '../components/ServiceSection';
-import HeroSection from '../components/HeroSection';
+import Footer from '../components-ansh/Footer';
+import ServicesSection from '../components-ansh/ServiceSection';
+import HeroSection from '../components-ansh/HeroSection';
 
 export default function Home() {
   return (

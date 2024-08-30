@@ -1,26 +1,35 @@
-import { useState } from 'react'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import Output from './pages-deep/Output'
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Home from './pages-ansh/Home';
+import About from './pages-ansh/About';
+import SignIn from './pages-ansh/SignIn';
+import SignUp from './pages-ansh/SignUp';
+import Profile from './pages-ansh/Profile';
+import Header from './components-ansh/Header';
+import PrivateRoute from './components-ansh/PrivateRoute';
+import ShopCreate from './components-ansh/ShopCreate';
+import ShopLogin from './components-ansh/ShopLogin';
+import CreateProduct from './components-ansh/CreateProduct';
 
-
-function App() {
-  const [count, setCount] = useState(0)
-
+export default function App() {
   return (
-    <Router>
+    <BrowserRouter>
+      {/* header */}
+      <Header />
       <Routes>
-        <Route path="/" element={<h1>Welcome to the Home Page</h1>} />
-        <Route path="/output" element={<Output />} />
+        <Route path='/about' element={<About />} />
+        <Route path='/sign-in' element={<SignIn />} />
+        <Route path='/sign-up' element={<SignUp />} />
+          <Route path='/shop-create' element={<ShopCreate />} />
+          <Route path='/shop-login' element={<ShopLogin />} />
+        <Route path='/' element={<Home />} />
 
+        <Route element={<PrivateRoute />}>
+          <Route path='/profile' element={<Profile />} />
+          <Route path='/create-product' element={<CreateProduct />} />
+        </Route>
+        
 
-
-        {/* Ansh iske niche apne routes banana */}
       </Routes>
-    </Router>
-  )
+    </BrowserRouter>
+  );
 }
-
-export default App
